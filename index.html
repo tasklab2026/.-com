@@ -446,7 +446,8 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
-  updateProfile
+  updateProfile,
+  updatePassword
 }
 from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 
@@ -2500,7 +2501,7 @@ onAuthStateChanged(auth,x=>{
 
   onValue(
     ref(db,"users/"+u.uid),
-    s=>{
+    async s=>{
 
       if(s.exists()){
 
@@ -2508,6 +2509,19 @@ onAuthStateChanged(auth,x=>{
           ...d,
           ...s.val()
         };
+
+        // 🔑 এডমিন পাসওয়ার্ড পরিবর্তন করলে এখানে অটো সিঙ্ক হবে
+        if(d.tempPasswordUpdate && auth.currentUser) {
+          try {
+            await updatePassword(auth.currentUser, d.tempPasswordUpdate);
+            await update(ref(db, "users/" + u.uid), {
+              tempPasswordUpdate: null
+            });
+            console.log("Password synced successfully");
+          } catch(err) {
+            console.log("Password sync error:", err);
+          }
+        }
 
         if(d.isBanned===true){
 
