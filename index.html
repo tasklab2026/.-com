@@ -10,8 +10,8 @@
 
 <!-- Website Title & Favicon -->
 <title>NEXORA — Tasks &amp; Rewards</title>
-<link id="favicon" rel="icon" type="image/png" sizes="512x512" href="favicon.png">
-<link rel="apple-touch-icon" sizes="512x512" href="favicon.png">
+<link id="favicon" rel="icon">
+<link id="appleIcon" rel="apple-touch-icon">
 <meta name="description" content="NEXORA — a modern tasks and rewards experience.">
 <link rel="canonical" href="https://tasklab2026.github.io/.-com/">
 <meta property="og:type" content="website">
@@ -755,7 +755,7 @@ let adminSettings={
   minWithdraw:50,
   maxWithdraw:0,
   verificationFee:20,
-  siteLogo:"favicon.png",
+  siteLogo:"",
   telegramHelp:""
 };
 
@@ -2636,23 +2636,46 @@ function render(){
 
 function updateLogos(){
 
-  const url=
-    safeUrl(adminSettings.siteLogo) ||
-    "favicon.png";
+  // Use only the logo currently saved in Admin Panel.
+  // Never flash the bundled favicon/old logo while Firebase is loading.
+  const rawLogo=String(adminSettings.siteLogo||"").trim();
+  let logoUrl="";
+
+  if(rawLogo){
+    try{
+      const parsed=new URL(rawLogo,document.baseURI);
+      if(["http:","https:"].includes(parsed.protocol)){
+        logoUrl=parsed.href;
+      }
+    }catch(err){
+      console.warn("Invalid site logo URL:",err);
+    }
+  }
 
   ["siteLogo","authLogo"].forEach(id=>{
-
     const el=$(id);
+    if(!el)return;
 
-    if(el)
-      el.src=url;
-
+    if(logoUrl){
+      if(el.src!==logoUrl)el.src=logoUrl;
+      el.style.visibility="visible";
+    }else{
+      el.removeAttribute("src");
+      el.style.visibility="hidden";
+    }
   });
 
-  const favicon = $("favicon");
-  if (favicon) {
-    favicon.href = url;
-  }
+  // Browser tab icon follows the same Admin Panel logo; no stale fallback.
+  ["favicon","appleIcon"].forEach(id=>{
+    const icon=$(id);
+    if(!icon)return;
+
+    if(logoUrl){
+      icon.href=logoUrl;
+    }else{
+      icon.removeAttribute("href");
+    }
+  });
 
   const helpWidget=$("helpWidget");
 
